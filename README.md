@@ -72,7 +72,7 @@ This POC assumes:
 
 ```apex
 User autoProcUser = \[SELECT Id FROM User WHERE UserType = 'AutomatedProcess' LIMIT 1];
-PermissionSet ps = \[SELECT Id FROM PermissionSet WHERE Name = 'Callout\_Permission' LIMIT 1];
+PermissionSet ps = \[SELECT Id FROM PermissionSet WHERE Name = 'Callout_Permission' LIMIT 1];
 insert new PermissionSetAssignment(AssigneeId = autoProcUser.Id, PermissionSetId = ps.Id);
 ```
 
