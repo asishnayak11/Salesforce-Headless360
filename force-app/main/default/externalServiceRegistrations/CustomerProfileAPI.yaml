@@ -1,0 +1,121 @@
+openapi: 3.0.0
+info:
+  title: CustomerProfileAPI
+  description: Retrieves a complete 360-degree hotel-customer profile from Salesforce through a custom Apex REST endpoint so an Agentforce agent can answer questions about a guest, their food bills and itemized orders, and their room-service cases.
+  version: '1.0.0'
+servers:
+  - url: /services/apexrest
+paths:
+  /CustomerProfileAPI/:
+    get:
+      operationId: doGet
+      summary: Get a customer's full 360 profile by name
+      description: Returns a complete profile for the closest hotel customer matched by name, including stay and booking details, every food bill with its itemized food orders and food option details, and all room-service cases the guest has raised. Matching is partial and case-insensitive and the single closest customer is returned. Results respect the running user sharing and field-level security.
+      x-sfdc:
+        agent:
+          action:
+            publishAsAgentAction: true
+      parameters:
+        - name: customerName
+          in: query
+          required: true
+          description: Full or partial customer name to search for, e.g. "Mukesh Sharma" or "Mukesh". Returns an empty list if blank or no match.
+          schema:
+            type: string
+          x-sfdc:
+            agent:
+              action:
+                isDisplayable: true
+                isUserInput: true
+      responses:
+        '200':
+          description: A list containing the matched customer's full profile (a single element), or an empty list when no customer matches.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerDetail'
+components:
+  schemas:
+    CustomerDetail:
+      type: object
+      description: The full 360-degree profile for a single hotel customer.
+      properties:
+        customerId:
+          type: string
+          description: The Customer record Id.
+        name:
+          type: string
+          description: The customer's full name.
+        customerNumber:
+          type: string
+          description: The external Customer ID.
+        bookingId:
+          type: string
+          description: The booking reference for the stay.
+        checkInDate:
+          type: string
+          format: date
+          description: The check-in date for the stay.
+        mobilePhone:
+          type: string
+          description: The customer's contact number.
+        roomPreference:
+          type: string
+          description: The room preference, such as Sea View or Garden View.
+        status:
+          type: string
+          description: The current customer/booking status.
+        foodBills:
+          type: array
+          description: All food bills for the customer, each with itemized food orders.
+          items:
+            $ref: '#/components/schemas/FoodBillInfo'
+        roomServiceCases:
+          type: array
+          description: All room-service cases raised by the customer.
+          items:
+            $ref: '#/components/schemas/RoomServiceCaseInfo'
+    FoodBillInfo:
+      type: object
+      description: A single food bill with its itemized food orders.
+      properties:
+        billId:
+          type: string
+          description: The Food Bill record Id.
+        billNumber:
+          type: string
+          description: The food bill number/name.
+        totalAmount:
+          type: number
+          description: The total amount of the food bill.
+    RoomServiceCaseInfo:
+      type: object
+      description: A single room-service case raised by the customer.
+      properties:
+        caseId:
+          type: string
+          description: The Case record Id.
+        caseNumber:
+          type: string
+          description: The human-readable case number.
+        subject:
+          type: string
+          description: The case subject.
+        status:
+          type: string
+          description: The case status.
+        priority:
+          type: string
+          description: The case priority.
+        origin:
+          type: string
+          description: The case origin/channel.
+        description:
+          type: string
+          description: The case description.
+        createdDate:
+          type: string
+          format: date-time
+          description: When the case was created.

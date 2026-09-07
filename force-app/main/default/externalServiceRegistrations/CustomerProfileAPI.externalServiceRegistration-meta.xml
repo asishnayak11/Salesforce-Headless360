@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExternalServiceRegistration xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Retrieves a complete 360-degree hotel-customer profile from Salesforce through a custom Apex REST endpoint so an Agentforce agent can answer questions about a guest, their food bills and itemized orders, and their room-service cases.</description>
+    <label>CustomerProfileAPI</label>
+    <operations>
+        <active>true</active>
+        <name>doget</name>
+    </operations>
+    <registrationProviderAsset>CustomerProfileAPI</registrationProviderAsset>
+    <registrationProviderType>ApexRest</registrationProviderType>
+    <schemaType>OpenApi3</schemaType>
+    <schemaUploadFileExtension>yaml</schemaUploadFileExtension>
+    <schemaUploadFileName>CustomerProfileAPI</schemaUploadFileName>
+    <serviceBinding>{&quot;host&quot;:&quot;&quot;,&quot;basePath&quot;:&quot;/services/apexrest&quot;,&quot;allowedSchemes&quot;:[],&quot;requestMediaTypes&quot;:[],&quot;responseMediaTypes&quot;:[],&quot;compatibleMediaTypes&quot;:{},&quot;extensions&quot;:{}}</serviceBinding>
+    <status>Complete</status>
+    <systemVersion>3</systemVersion>
+</ExternalServiceRegistration>

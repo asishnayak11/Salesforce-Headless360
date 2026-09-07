@@ -1,0 +1,47 @@
+openapi: 3.0.0
+info:
+  title: MassUpdateAccountsRestApi
+  description: Submits an async batch job to update Account Industry field for records with no Industry set. Returns immediately with a job ID and tracking instructions; does not wait for completion.
+  version: '1.0.0'
+servers:
+  - url: /services/apexrest
+paths:
+  /BulkJobs/MassUpdateAccounts:
+    post:
+      operationId: startJob
+      summary: Start mass Account Industry update batch job
+      description: Kicks off an async Batch Apex job that sets the Industry field on all Account records currently missing an Industry value, using the industry value provided in the request. Returns immediately — does not wait for the batch to finish. Progress can be tracked in Salesforce Setup under Apex Jobs using the returned batch job ID. Completion, including success/failure counts and any error details, is announced separately in the #salesforce-jobs Slack channel — do not poll this endpoint for status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - industry
+              properties:
+                industry:
+                  type: string
+                  description: The Industry picklist value to set on all matching Account records, e.g. "Technology", "Healthcare", "Financial Services", "Manufacturing". Must be a valid value from the Account Industry picklist in this org.
+      responses:
+        '200':
+          description: Job submitted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobSubmissionResult'
+components:
+  schemas:
+    JobSubmissionResult:
+      type: object
+      description: Confirmation that the batch job was submitted, with tracking details.
+      properties:
+        status:
+          type: string
+          description: Submission status. Always "Submitted" on success.
+        batchJobId:
+          type: string
+          description: The Salesforce Batch Apex Job ID (AsyncApexJob Id) — use this to look up the job under Setup > Apex Jobs.
+        message:
+          type: string
+          description: Human-readable instructions on where to track the job in Setup and how completion will be communicated in Slack.

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExternalServiceRegistration xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Exposes the MassUpdateAccountsRestApi Apex REST class, which starts an async batch job to update Account Industry fields, as a callable external service operation.</description>
+    <label>MassUpdateAccountsRestApi</label>
+    <operations>
+        <active>true</active>
+        <name>startjob</name>
+    </operations>
+    <registrationProviderAsset>MassUpdateAccountsRestApi</registrationProviderAsset>
+    <registrationProviderType>ApexRest</registrationProviderType>
+    <schemaType>OpenApi3</schemaType>
+    <schemaUploadFileExtension>yaml</schemaUploadFileExtension>
+    <schemaUploadFileName>MassUpdateAccountsRestApi</schemaUploadFileName>
+    <serviceBinding>{&quot;host&quot;:&quot;&quot;,&quot;basePath&quot;:&quot;/services/apexrest&quot;,&quot;allowedSchemes&quot;:[],&quot;requestMediaTypes&quot;:[],&quot;responseMediaTypes&quot;:[],&quot;compatibleMediaTypes&quot;:{},&quot;extensions&quot;:{}}</serviceBinding>
+    <status>Complete</status>
+    <systemVersion>3</systemVersion>
+</ExternalServiceRegistration>
