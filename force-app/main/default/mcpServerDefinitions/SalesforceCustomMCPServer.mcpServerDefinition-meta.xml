@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<McpServerDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>This is the salesforce custom MCP Server which will contain all the tools required for the CRUD Operations and all Async processes.</description>
+    <masterLabel>Salesforce Custom MCP Server</masterLabel>
+    <tools>
+        <apiDefinition>
+            <apiIdentifier>ar:MassUpdateAccountsRestApi</apiIdentifier>
+            <apiSource>API_CATALOG</apiSource>
+            <operation>startJob</operation>
+        </apiDefinition>
+        <descriptionOverride>Kicks off an async Batch Apex job that updates the Industry field on all Account records where Industry is null, setting it to &apos;Technology&apos;. The job runs asynchronously and this call returns immediately — it does not wait for the batch to finish. Progress can be tracked in Salesforce Setup under Apex Jobs using the returned batch job ID. Completion, including success/failure counts and any error details, is announced separately in the</descriptionOverride>
+        <destructive>false</destructive>
+        <idempotent>false</idempotent>
+        <openWorld>false</openWorld>
+        <readOnly>false</readOnly>
+        <returnDirect>false</returnDirect>
+        <toolName>startJobMassUpdateAccountsRestApi</toolName>
+        <toolTitle>startJob</toolTitle>
+    </tools>
+    <tools>
+        <apiDefinition>
+            <apiIdentifier>psmcps:platform.sobject-all:getRelatedRecords</apiIdentifier>
+            <apiSource>API_CATALOG</apiSource>
+            <operation>getRelatedRecords</operation>
+        </apiDefinition>
+        <descriptionOverride>Retrieves child records related to a parent record by traversing relationships. Use this instead of a separate SOQL query when you already have a record ID and need its related records (e.g., get all Contacts for an Account, or all Opportunity Line Items for an Opportunity). Supports multi-level traversal (Account → Contacts → Cases). More efficient than multiple queries when navigating object relationships. Requires: parent object name, parent record ID, and relationship name (e.g., &quot;Contacts&quot;, &quot;Opportunities&quot;).</descriptionOverride>
+        <destructive>false</destructive>
+        <idempotent>true</idempotent>
+        <openWorld>true</openWorld>
+        <readOnly>true</readOnly>
+        <returnDirect>false</returnDirect>
+        <toolName>getRelatedRecordsplatform_sobject_all</toolName>
+        <toolTitle>Get Related Records</toolTitle>
+    </tools>
+    <tools>
+        <apiDefinition>
+            <apiIdentifier>psmcps:platform.sobject-all:soqlQuery</apiIdentifier>
+            <apiSource>API_CATALOG</apiSource>
+            <operation>soqlQuery</operation>
+        </apiDefinition>
+        <descriptionOverride>Executes a SOQL query to retrieve Salesforce records. Use this when you know which object and fields you need—it&apos;s the primary way to read data. SOQL syntax: `SELECT fields FROM Object WHERE conditions ORDER BY field LIMIT n`. Supports relationship queries to traverse lookups (e.g., `Contact.Account.Name`) and subqueries for child records (e.g., `(SELECT Id FROM Contacts)`). Always include a WHERE clause to filter results and a LIMIT clause to control result size. For large objects, filter on indexed fields (Id, Name, foreign keys, External IDs) to avoid timeout errors. Maximum 50,000 total records per transaction across all queries. Example: `SELECT Id, Name, Industry FROM Account WHERE Industry = &apos;Technology&apos; LIMIT 100`  **When to use SOQL vs SOSL**: Use SOQL when you know which object contains your data and need precise filtering, sorting, aggregation, or relationship traversal. SOQL supports complex WHERE clauses, JOINs via relationships, GROUP BY, and ORDER BY.</descriptionOverride>
+        <destructive>false</destructive>
+        <idempotent>true</idempotent>
+        <openWorld>true</openWorld>
+        <readOnly>true</readOnly>
+        <returnDirect>false</returnDirect>
+        <toolName>soqlQueryplatform_sobject_all</toolName>
+        <toolTitle>Query Records (SOQL)</toolTitle>
+    </tools>
+    <tools>
+        <apiDefinition>
+            <apiIdentifier>psmcps:platform.sobject-all:getUserInfo</apiIdentifier>
+            <apiSource>API_CATALOG</apiSource>
+            <operation>getUserInfo</operation>
+        </apiDefinition>
+        <descriptionOverride>Returns current user&apos;s identity, role, and preferences. Call this when you need to personalize responses, understand the user&apos;s team context, or apply their preferred defaults for currency, date ranges, or report formatting. Returns: User ID, name, role, profile, manager, local time, timezone, and user-specific preferences configured by admins (e.g., &quot;When showing pipeline, always break out by AE&quot;).</descriptionOverride>
+        <destructive>false</destructive>
+        <idempotent>true</idempotent>
+        <openWorld>true</openWorld>
+        <readOnly>true</readOnly>
+        <returnDirect>false</returnDirect>
+        <toolName>getUserInfoplatform_sobject_all</toolName>
+        <toolTitle>Get Current User Info</toolTitle>
+    </tools>
+    <tools>
+        <apiDefinition>
+            <apiIdentifier>psmcps:platform.sobject-all:getObjectSchema</apiIdentifier>
+            <apiSource>API_CATALOG</apiSource>
+            <operation>getObjectSchema</operation>
+        </apiDefinition>
+        <descriptionOverride>Returns Salesforce schema information optimized for LLM consumption. Call with NO PARAMETERS first to get an index of all queryable objects—this helps you understand what data exists (80-90% smaller than raw describe). Then call with a specific OBJECT_NAME to get field-level details when you need to construct queries or understand a specific object&apos;s structure. Includes admin-authored guidance about data quality and business definitions (e.g., &quot;use Calculated_ACV__c instead of Amount for accurate forecasting)&quot;;</descriptionOverride>
+        <destructive>false</destructive>
+        <idempotent>true</idempotent>
+        <openWorld>true</openWorld>
+        <readOnly>true</readOnly>
+        <returnDirect>false</returnDirect>
+        <toolName>getObjectSchemaplatform_sobject_all</toolName>
+        <toolTitle>Get Object Schema (Enhanced)</toolTitle>
+    </tools>
+</McpServerDefinition>
