@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Fired when a Batch Apex mass-update job completes and its results are finalized. Carries the job ID, record success/failure counts, and an error summary for records that failed DML. Consumed by an after-insert trigger that notifies an external AI agent (via Named Credential callout) with the outcome, so the agent can summarize the result and post it to Slack without polling. Do not publish manually — this event is emitted only from Batch Apex finish() methods that need to report completion status downstream.</description>
+    <eventType>HighVolume</eventType>
+    <label>Bulk Job Settled</label>
+    <pluralLabel>Bulk Jobs Settled</pluralLabel>
+    <publishBehavior>PublishImmediately</publishBehavior>
+</CustomObject>

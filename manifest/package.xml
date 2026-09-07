@@ -4,10 +4,10 @@
         <members>*</members>
         <name>ApexClass</name>
     </types-->
-    <types>
+    <!--types>
         <members>MassUpdateAccountsRestApi</members>
         <name>ExternalServiceRegistration</name>
-    </types>
+    </types-->
     <!--types>
         <members>*</members>
         <name>ApexComponent</name>
@@ -19,12 +19,24 @@
     <types>
         <members>*</members>
         <name>ApexTestSuite</name>
-    </types>
+    </types-->
     <types>
-        <members>*</members>
+        <members>BulkJobSettledTrigger</members>
         <name>ApexTrigger</name>
     </types>
     <types>
+        <members>Bulk_Job_Settled__e</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>Bulk_Job_Settled__e.Job_Id__c</members>
+        <members>Bulk_Job_Settled__e.Records_Processed__c</members>
+        <members>Bulk_Job_Settled__e.Records_Succeeded__c</members>
+        <members>Bulk_Job_Settled__e.Records_Failed__c</members>
+        <members>Bulk_Job_Settled__e.Error_Summary__c</members>
+        <name>CustomField</name>
+    </types>
+    <!--types>
         <members>*</members>
         <name>AuraDefinitionBundle</name>
     </types>
