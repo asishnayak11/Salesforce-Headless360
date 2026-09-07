@@ -1,58 +1,101 @@
-# Salesforce DX Project
+# Salesforce Headless 360 — MCP + Async Batch Processing POC
 
-Salesforce DX is a development approach that brings source-driven development, team collaboration, and continuous integration to the Salesforce Platform. Instead of working directly in an org through a web browser, you work with metadata as source files in a local DX project, track changes in version control, and deploy through automated processes.
+A proof-of-concept architecture demonstrating how to safely expose long-running, asynchronous Salesforce operations (Batch Apex, mass record updates) to an AI agent through the **Model Context Protocol (MCP)** — without blocking the agent's session, and without losing track of the result once the job completes.
 
-This project template gets you started with the tools and structure you need to build Salesforce applications using source control, scratch orgs, and the Salesforce CLI.
+## The Problem
 
-## Prerequisites
+MCP is a synchronous, request/response tool-calling protocol: an agent calls a tool, waits, and gets a result back in the same turn. Salesforce, at real data volume, is not synchronous — mass updates run as **Batch Apex** jobs that can take minutes to complete, well outside any single agent tool call.
 
-Before you start, make sure you have:
+This repo is a working answer to: *how does an AI agent kick off a long-running Salesforce job, walk away, and still get notified with accurate results once it's done?*
 
-- **Salesforce CLI** - Download from [developer.salesforce.com/tools/salesforcecli](https://developer.salesforce.com/tools/salesforcecli). See [Install Salesforce CLI](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_install_cli.htm) for details.
-- **VS Code with Salesforce Extension Pack** - See [Installation Instructions](https://developer.salesforce.com/docs/platform/sfvscode-extensions/guide/install.html) for details. Includes the Agentforce Vibes extension.
-- **A development org** - Sign up for a free Developer Edition org [here](https://developer.salesforce.com/signup).
-- **Dev Hub enabled** (optional, required to create scratch orgs) - You can enable Dev Hub in your development org under Setup > Dev Hub.  See [Provide Developers Access to Salesforce DX Tools](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_setup_dx_tools.htm).
+## Architecture
 
-## Project Structure
+```
+Agent (Claude) 
+   │  calls MCP tool
+   ▼
+Salesforce Hosted MCP Server
+   │  invokes External Service (ApexRest)
+   ▼
+MassUpdateAccountsRestApi (Apex REST)
+   │  starts batch, returns job ID immediately — non-blocking
+   ▼
+MassUpdateAccountsBatch (Database.Batchable)
+   │  runs async, updates records in chunks
+   │  finish() publishes a Platform Event once complete
+   ▼
+Bulk\_Job\_Settled\_\_e (Platform Event)
+   │  triggers BulkJobSettledTrigger (runs as Automated Process)
+   ▼
+NotifyRoutineQueueable (Queueable, allows callouts)
+   │  POSTs job outcome via Named/External Credential
+   ▼
+Claude Code Routine (API-triggered)
+   │  wakes up in a new session with the job outcome
+   ▼
+Slack (#salesforce-jobs)
+   Posts a human-readable summary of the completed job
+```
 
-Your DX project follows this structure:
+## Why It's Built This Way
 
-- **`force-app/main/default/`** - Your metadata source files live in this default package directory. You can configure additional package directories in the `sfdx-project.json` file.
-- **`config/`** - Scratch org definitions and project settings
-- **`scripts/`** - Automation scripts for common tasks
-- **`sfdx-project.json`** - Project manifest that defines package directories, namespace, API version, and other project-level settings
+* **Platform Events over a direct callout from `finish()`** — decouples "job is done" from "someone got notified," so other processes can subscribe to the same completion signal later without touching the batch class.
+* **Permission Set assigned directly to the Automated Process User** — Platform Event triggers run as the **Automated Process** system entity by default, and this identity has no standard way to be granted a Permission Set through Setup UI (Salesforce blocks it there). This repo's fix: a narrow, single-purpose Permission Set — **`Callout Permission`** — granting *only* External Credential Principal Access, nothing else, assigned to the Automated Process User directly via Apex (`insert new PermissionSetAssignment(...)`). A broader/pre-existing permission set will likely fail here if it bundles anything requiring a license Automated Process doesn't hold; keep this one minimal.
+* **External Credential over hardcoded secrets** — the bearer token for the outbound callout is never stored in Apex or Custom Metadata; it lives in a Salesforce-managed External Credential, injected at callout time.
+* **Claude Code Routine (API trigger) as the wake-up mechanism** — since neither Claude.ai nor ChatGPT support pushing a message into an existing chat thread from an external event, this repo uses a Routine's dedicated API endpoint as the actual "resume" mechanism: each Platform Event fire starts a fresh, context-carrying session that completes the notification loop.
 
-See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm).
+## Repo Structure
 
-## Get Started
+```
+force-app/main/default/
+├── classes/
+│   ├── MassUpdateAccountsRestApi.cls      # Entry point — starts the batch, returns immediately
+│   ├── MassUpdateAccountsBatch.cls        # Batchable — does the mass update, publishes completion event
+│   └── NotifyRoutineQueueable.cls         # Queueable — makes the outbound callout to the Routine
+├── triggers/
+│   └── BulkJobSettledTrigger.trigger      # Subscribes to the Platform Event
+├── objects/
+│   └── Bulk\_Job\_Settled\_\_e/               # Platform Event definition and fields
+└── externalServiceRegistrations/
+    ├── MassUpdateAccountsRestApi.externalServiceRegistration-meta.xml
+    └── MassUpdateAccountsRestApi.yaml     # OpenAPI spec — exposes the REST endpoint as an MCP tool
+```
 
-Ready to start developing? The [Get Started with Salesforce DX](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_get_started_dx.htm) guide walks you through your first project, from creating a scratch org to creating a simple Apex class or LWC to deploying your code to a sandbox.
+## Setup
 
-## Common Salesforce CLI Commands
+This POC assumes:
 
-Here are common CLI commands that you'll use the most:
+* A Salesforce org with **Hosted MCP Servers** enabled (Setup → MCP Servers)
+* A **Named Credential** + **External Credential** configured for outbound authentication to the Claude Code Routine endpoint
+* A **Claude Code Routine** created with an API trigger, and a Slack connector attached for delivering the final summary
+* A dedicated, minimal **Permission Set** named **`Callout Permission`**, granting only External Credential Principal Access (`Claude\_Routine\_Credential` / `AnthropicPrincipal`), assigned directly to the org's **Automated Process User** — no point-and-click path exists for this step, it must be done via Apex:
 
-- `sf org login web`: Authorize an org
-- `sf org open`: Open your org in a browser
-- `sf org create scratch`: Create a scratch org
-- `sf project deploy start`: Deploy metadata to your org
-- `sf project retrieve start`: Retrieve metadata from your org
-- `sf template generate <artifact>`: Scaffold new components, such as Apex classes and triggers, LWC components, Lightning apps, and more
-- `sf apex <command>`: Run Apex tests, run anonymous Apex blocks, and view logs
-- `sf data <command>`: Work with test data
-- `sf alias <command>`: Manage org aliases
-- `sf config <command>`: Configure CLI settings
+```apex
+User autoProcUser = \[SELECT Id FROM User WHERE UserType = 'AutomatedProcess' LIMIT 1];
+PermissionSet ps = \[SELECT Id FROM PermissionSet WHERE Name = 'Callout_Permission' LIMIT 1];
+insert new PermissionSetAssignment(AssigneeId = autoProcUser.Id, PermissionSetId = ps.Id);
+```
 
-## Use Agentforce Vibes to Build Lightning Apps
+Deploy order:
 
-Transform your ideas into custom Lightning apps that extend CRM workflows directly in Lightning Experience. Through natural conversations with Agentforce Vibes, implement custom objects and fields, complex business logic, and dynamic UI components. See [Build a Lightning App Using Agentforce Vibes](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/lexapp-overview.html).
+1. `objects/Bulk\_Job\_Settled\_\_e` (Platform Event + fields)
+2. `classes/` (Batch, REST endpoint, Queueable)
+3. `triggers/BulkJobSettledTrigger`
+4. Create the `Callout Permission` Permission Set and assign it to the Automated Process User (Execute Anonymous — see Setup section above)
+5. `externalServiceRegistrations/` (registers the REST endpoint for MCP tool discovery)
+6. Attach the resulting operation to your MCP Server definition in Setup
 
-## Additional Resources
+## Testing
 
-- [Agentforce Vibes Developer Guide](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/einstein-overview.html)
-- [Salesforce CLI Installation Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/)
-- [Salesforce CLI Plugin Development Guide](https://developer.salesforce.com/docs/platform/salesforce-cli-plugin/guide/conceptual-overview.html)
-- [Salesforce VS Code Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
+Run a small batch first — not the full record volume:
+
+```apex
+Database.executeBatch(new MassUpdateAccountsBatch('Technology'), 200);
+```
+
+Check **Setup → Apex Jobs** for completion, then confirm the Platform Event → Queueable → Routine → Slack chain fired correctly before scaling up.
+
+## Status
+
+Working POC. Tested end-to-end against a Developer Edition org with a small dataset. Not yet load-tested at full enterprise volume (20,000+ records) or hardened for production (see: per-record failure detail from Bulk API's `failedResults` endpoint is not yet surfaced — only summary counts are).
 
